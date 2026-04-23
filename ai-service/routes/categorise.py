@@ -41,7 +41,7 @@ Example:
         if not response:
             return jsonify({"error": "AI service unavailable"}), 500
 
-        # ✅ Extract JSON safely (IMPORTANT FIX)
+        # Extract JSON safely (IMPORTANT FIX)
         match = re.search(r"\{.*\}", response, re.DOTALL)
 
         if not match:
