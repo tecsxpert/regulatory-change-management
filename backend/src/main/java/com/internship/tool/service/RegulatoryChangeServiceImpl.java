@@ -10,6 +10,9 @@ import com.internship.tool.exception.ResourceNotFoundException;
 import com.internship.tool.repository.RegulatoryChangeRepository;
 import java.time.LocalDate;
 import java.util.Set;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,10 @@ public class RegulatoryChangeServiceImpl implements RegulatoryChangeService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "regulatoryChangesById", allEntries = true),
+            @CacheEvict(cacheNames = "regulatoryChangesAll", allEntries = true)
+    })
     public RegulatoryChangeResponse create(RegulatoryChangeRequest request) {
         validateRequest(request);
 
@@ -47,6 +54,10 @@ public class RegulatoryChangeServiceImpl implements RegulatoryChangeService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "regulatoryChangesById", allEntries = true),
+            @CacheEvict(cacheNames = "regulatoryChangesAll", allEntries = true)
+    })
     public RegulatoryChangeResponse update(Long id, RegulatoryChangeRequest request) {
         validateId(id);
         validateRequest(request);
@@ -67,6 +78,7 @@ public class RegulatoryChangeServiceImpl implements RegulatoryChangeService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "regulatoryChangesById", key = "#id")
     public RegulatoryChangeResponse getById(Long id) {
         validateId(id);
         RegulatoryChange regulatoryChange = regulatoryChangeRepository.findById(id)
@@ -76,12 +88,20 @@ public class RegulatoryChangeServiceImpl implements RegulatoryChangeService {
 
     @Override
     @Transactional(readOnly = true)
+        @Cacheable(
+            cacheNames = "regulatoryChangesAll",
+            key = "#pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString()"
+        )
     public Page<RegulatoryChangeResponse> getAll(Pageable pageable) {
         return regulatoryChangeRepository.findAll(pageable)
                 .map(this::mapToResponse);
     }
 
     @Override
+        @Caching(evict = {
+            @CacheEvict(cacheNames = "regulatoryChangesById", allEntries = true),
+            @CacheEvict(cacheNames = "regulatoryChangesAll", allEntries = true)
+        })
     public void delete(Long id) {
         validateId(id);
         if (!regulatoryChangeRepository.existsById(id)) {
