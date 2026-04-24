@@ -73,6 +73,7 @@ jwt:
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost}
+  file-storage-path: ${FILE_STORAGE_PATH:./uploads}
 
 notification:
   email-to: ${NOTIFICATION_EMAIL_TO:${MAIL_USERNAME:}}
