@@ -2,7 +2,8 @@ package com.internship.tool.service;
 
 import com.internship.tool.dto.RegulatoryChangeRequest;
 import com.internship.tool.dto.RegulatoryChangeResponse;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface RegulatoryChangeService {
 
@@ -12,7 +13,7 @@ public interface RegulatoryChangeService {
 
     RegulatoryChangeResponse getById(Long id);
 
-    List<RegulatoryChangeResponse> getAll();
+    Page<RegulatoryChangeResponse> getAll(Pageable pageable);
 
     void delete(Long id);
 }

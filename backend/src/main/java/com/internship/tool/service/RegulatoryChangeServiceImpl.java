@@ -9,8 +9,9 @@ import com.internship.tool.exception.InputValidationException;
 import com.internship.tool.exception.ResourceNotFoundException;
 import com.internship.tool.repository.RegulatoryChangeRepository;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,11 +76,9 @@ public class RegulatoryChangeServiceImpl implements RegulatoryChangeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RegulatoryChangeResponse> getAll() {
-        return regulatoryChangeRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<RegulatoryChangeResponse> getAll(Pageable pageable) {
+        return regulatoryChangeRepository.findAll(pageable)
+                .map(this::mapToResponse);
     }
 
     @Override
