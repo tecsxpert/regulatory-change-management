@@ -17,21 +17,25 @@ def categorise():
     user_text = data["text"]
 
     prompt = f"""
-You are an AI classifier.
+You are a strict classification AI.
 
-Classify the text into one of these categories:
+Classify the text into EXACTLY one category:
 Compliance, Risk, Legal, Financial, Operational
+
+Rules:
+- Output ONLY valid JSON
+- DO NOT include markdown (no ``` or ```json)
+- DO NOT add any text outside JSON
+- Confidence must be between 0 and 1
 
 Text:
 \"\"\"{user_text}\"\"\"
 
-Respond ONLY in valid JSON. No extra text.
-
-Example:
+Output:
 {{
-  "category": "Compliance",
-  "confidence": 0.95,
-  "reasoning": "This relates to regulatory compliance requirements."
+  "category": "...",
+  "confidence": 0.0,
+  "reasoning": "..."
 }}
 """
 
@@ -41,8 +45,11 @@ Example:
         if not response:
             return jsonify({"error": "AI service unavailable"}), 500
 
-        # Extract JSON safely (IMPORTANT FIX)
-        match = re.search(r"\{.*\}", response, re.DOTALL)
+        # Remove markdown formatting (NEW)
+        cleaned = response.replace("```json", "").replace("```", "").strip()
+
+        # Extract JSON
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
 
         if not match:
             return jsonify({"error": "AI did not return valid JSON"}), 500
