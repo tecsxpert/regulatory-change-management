@@ -20,10 +20,19 @@ def query():
     question = data["question"]
 
     try:
-        # ✅ STEP 0 — CHECK CACHE FIRST
+        # STEP 0 — CACHE CHECK
         cached = get_cache(question)
         if cached:
-            return jsonify(cached)
+            return jsonify({
+                "data": cached,
+                "meta": {
+                    "confidence": 1.0,
+                    "model_used": "cache",
+                    "tokens_used": 0,
+                    "response_time_ms": 0,
+                    "cached": True
+                }
+            })
 
         # Step 1: Retrieve documents
         results = chroma.query(question, n_results=3)
@@ -53,13 +62,20 @@ Answer clearly and concisely.
         # Step 4: Call Groq + track time
         start = time.time()
 
-        answer = groq.generate(prompt)
+        ai_result = groq.generate(prompt)
 
         end = time.time()
 
+        response_time_ms = int((end - start) * 1000)
+
+        # Track avg time
         response_times.append(end - start)
         if len(response_times) > 10:
             response_times.pop(0)
+
+        answer = ai_result["content"]
+        tokens_used = ai_result["tokens"]
+        model_used = ai_result["model"]
 
         # STEP 5 — SAVE TO CACHE
         result = {
@@ -69,7 +85,16 @@ Answer clearly and concisely.
 
         set_cache(question, result)
 
-        return jsonify(result)
+        return jsonify({
+            "data": result,
+            "meta": {
+                "confidence": 0.9,
+                "model_used": model_used,
+                "tokens_used": tokens_used,
+                "response_time_ms": response_time_ms,
+                "cached": False
+            }
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

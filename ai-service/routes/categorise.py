@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from services.groq_client import GroqClient
 import json
 import re
+import time
 
 categorise_bp = Blueprint("categorise", __name__)
 
@@ -24,7 +25,7 @@ Compliance, Risk, Legal, Financial, Operational
 
 Rules:
 - Output ONLY valid JSON
-- DO NOT include markdown (no ``` or ```json)
+- DO NOT include markdown
 - DO NOT add any text outside JSON
 - Confidence must be between 0 and 1
 
@@ -40,25 +41,38 @@ Output:
 """
 
     try:
-        response = client.generate(prompt)
+        start = time.time()
 
-        if not response:
-            return jsonify({"error": "AI service unavailable"}), 500
+        ai_result = client.generate(prompt)
 
-        # Remove markdown formatting (NEW)
-        cleaned = response.replace("```json", "").replace("```", "").strip()
+        end = time.time()
 
-        # Extract JSON
+        response_time_ms = int((end - start) * 1000)
+
+        raw_text = ai_result["content"]
+        tokens_used = ai_result["tokens"]
+        model_used = ai_result["model"]
+
+        # Clean markdown
+        cleaned = raw_text.replace("```json", "").replace("```", "").strip()
+
         match = re.search(r"\{.*\}", cleaned, re.DOTALL)
 
         if not match:
             return jsonify({"error": "AI did not return valid JSON"}), 500
 
-        json_str = match.group()
+        parsed = json.loads(match.group())
 
-        parsed = json.loads(json_str)
-
-        return jsonify(parsed)
+        return jsonify({
+            "data": parsed,
+            "meta": {
+                "confidence": parsed.get("confidence", 0.9),
+                "model_used": model_used,
+                "tokens_used": tokens_used,
+                "response_time_ms": response_time_ms,
+                "cached": False
+            }
+        })
 
     except json.JSONDecodeError:
         return jsonify({"error": "Failed to parse AI JSON response"}), 500
