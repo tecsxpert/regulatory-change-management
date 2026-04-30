@@ -1,21 +1,35 @@
 package com.internship.tool.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Schema(description = "Response payload for a regulatory change")
 public class RegulatoryChangeResponse {
 
+    @Schema(example = "1")
     private Long id;
+    @Schema(example = "RBI Circular on KYC updates")
     private String title;
+    @Schema(example = "Detailed description of the regulatory update and required actions")
     private String description;
+    @Schema(example = "RBI")
     private String source;
+    @Schema(example = "India")
     private String jurisdiction;
+    @Schema(example = "Compliance")
     private String category;
+    @Schema(example = "NEW")
     private String status;
+    @Schema(example = "HIGH")
     private String priority;
+    @Schema(example = "2026-05-01", format = "date")
     private LocalDate effectiveDate;
+    @Schema(example = "2026-04-25", format = "date")
     private LocalDate publishedDate;
+    @Schema(example = "2026-04-27T10:15:30")
     private LocalDateTime createdAt;
+    @Schema(example = "2026-04-27T10:45:30")
     private LocalDateTime updatedAt;
 
     public Long getId() {
