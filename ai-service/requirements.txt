@@ -1,0 +1,8 @@
+flask
+requests
+python-dotenv
+chromadb==0.4.24
+sentence-transformers
+numpy<2
+pysqlite3
+pypdf
