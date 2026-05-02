@@ -18,7 +18,7 @@ def test_query():
         print(f"\nQuestion: {q}")
         print("RAW:", data)
 
-        # ✅ SAFE HANDLING
+        # SAFE HANDLING
         if "data" in data:
             print("Answer:", data["data"]["answer"][:100], "...")
         else:
