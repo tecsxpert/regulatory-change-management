@@ -5,6 +5,11 @@ import time
 from routes.health import response_times
 from services.cache_service import get_cache, set_cache
 
+fallback_query = {
+    "answer": "Unable to generate answer at the moment. Please try again later.",
+    "sources": []
+}
+
 query_bp = Blueprint("query", __name__)
 
 chroma = ChromaService()
@@ -30,7 +35,8 @@ def query():
 
     try:
         # STEP 0 — CACHE CHECK
-        cached = get_cache(question)
+        key = question.lower().strip()
+        cached = get_cache(key)
         if cached:
             return jsonify({
                 "data": cached,
@@ -39,7 +45,8 @@ def query():
                     "model_used": "cache",
                     "tokens_used": 0,
                     "response_time_ms": 0,
-                    "cached": True
+                    "cached": True,
+                    "is_fallback": False
                 }
             })
 
@@ -48,7 +55,7 @@ def query():
         docs = results.get("documents", [[]])[0]
 
         if not docs:
-            return jsonify({"error": "No relevant documents found"}), 404
+            raise Exception("No relevant documents")
 
         # Step 2: Build context
         context = "\n\n".join(docs)
@@ -98,7 +105,7 @@ Question:
             "sources": docs
         }
 
-        set_cache(question, result)
+        set_cache(key, result)
 
         return jsonify({
             "data": result,
@@ -107,9 +114,20 @@ Question:
                 "model_used": model_used,
                 "tokens_used": tokens_used,
                 "response_time_ms": response_time_ms,
-                "cached": False
+                "cached": False,
+                "is_fallback": False
             }
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "data": fallback_query,
+            "meta": {
+                "confidence": 0.5,
+                "model_used": "fallback",
+                "tokens_used": 0,
+                "response_time_ms": 0,
+                "cached": False,
+                "is_fallback": True
+            }
+        })

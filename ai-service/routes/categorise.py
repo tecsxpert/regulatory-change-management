@@ -5,6 +5,12 @@ import re
 import time
 from services.cache_service import get_cache, set_cache
 
+fallback_categorise = {
+    "category": "Operational",
+    "confidence": 0.5,
+    "reasoning": "Fallback response due to AI service unavailability"
+}
+
 categorise_bp = Blueprint("categorise", __name__)
 
 client = GroqClient()
@@ -28,7 +34,8 @@ def categorise():
         return jsonify({"error": "Text too long"}), 400
 
     # CACHE CHECK (ADD HERE)
-    cached = get_cache(user_text)
+    key = user_text.lower().strip()
+    cached = get_cache(key)
     if cached:
         return jsonify({
             "data": cached,
@@ -37,7 +44,8 @@ def categorise():
                 "model_used": "cache",
                 "tokens_used": 0,
                 "response_time_ms": 0,
-                "cached": True
+                "cached": True,
+                "is_fallback": False
             }
         })
     
@@ -93,12 +101,12 @@ Output:
         match = re.search(r"\{.*\}", cleaned, re.DOTALL)
 
         if not match:
-            return jsonify({"error": "AI did not return valid JSON"}), 500
+            raise Exception("Invalid JSON from AI")
 
         parsed = json.loads(match.group())
         
         #  SAVE TO CACHE
-        set_cache(user_text, parsed)
+        set_cache(key, parsed)
 
         return jsonify({
             "data": parsed,
@@ -107,12 +115,33 @@ Output:
                 "model_used": model_used,
                 "tokens_used": tokens_used,
                 "response_time_ms": response_time_ms,
-                "cached": False
+                "cached": False,
+                "is_fallback": False
             }
         })
 
     except json.JSONDecodeError:
-        return jsonify({"error": "Failed to parse AI JSON response"}), 500
-
+        return jsonify({
+            "data": fallback_categorise,
+            "meta": {
+                "confidence": 0.5,
+                "model_used": "fallback",
+                "tokens_used": 0,
+                "response_time_ms": 0,
+                "cached": False,
+                "is_fallback": True
+            }
+        })
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "data": fallback_categorise,
+            "meta": {
+                "confidence": 0.5,
+                "model_used": "fallback",
+                "tokens_used": 0,
+                "response_time_ms": 0,
+                "cached": False,
+                "is_fallback": True
+            }
+        })
