@@ -3,6 +3,7 @@ from services.groq_client import GroqClient
 import json
 import re
 import time
+from services.cache_service import get_cache, set_cache
 
 categorise_bp = Blueprint("categorise", __name__)
 
@@ -26,6 +27,20 @@ def categorise():
     if len(user_text) > 1000:
         return jsonify({"error": "Text too long"}), 400
 
+    # CACHE CHECK (ADD HERE)
+    cached = get_cache(user_text)
+    if cached:
+        return jsonify({
+            "data": cached,
+            "meta": {
+                "confidence": cached.get("confidence", 1.0),
+                "model_used": "cache",
+                "tokens_used": 0,
+                "response_time_ms": 0,
+                "cached": True
+            }
+        })
+    
     prompt = f"""
 You are a strict classification AI.
 
@@ -81,6 +96,9 @@ Output:
             return jsonify({"error": "AI did not return valid JSON"}), 500
 
         parsed = json.loads(match.group())
+        
+        #  SAVE TO CACHE
+        set_cache(user_text, parsed)
 
         return jsonify({
             "data": parsed,
